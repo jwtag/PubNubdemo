@@ -25,7 +25,7 @@
         android:layout_height="478dp">
 
         <LinearLayout
-            android:id="@+id/email_login_form"
+            android:id="@+id/Username_login_form"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -51,10 +51,10 @@
                 android:layout_height="wrap_content">
 
                 <EditText
-                    android:id="@+id/number-of-games"
+                    android:id="@+id/opponent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Number of Messages before reveal."
+                    android:hint="Type your opponent's username here!"
                     android:imeActionId="6"
                     android:imeActionLabel="@string/action_sign_in_short"
                     android:imeOptions="actionUnspecified"
@@ -72,7 +72,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Start Guessing!"
+                android:text="Play Game!"
                 android:textStyle="bold" />
 
         </LinearLayout>

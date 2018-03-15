@@ -2,15 +2,15 @@
     <string name="app_name">PubNub-demo</string>
 
     <!-- Strings related to login -->
-    <string name="prompt_email">Email</string>
-    <string name="prompt_password">Password (optional)</string>
+    <string name="prompt_Username">Username</string>
+    <string name="prompt_Opponent">Opponent (optional)</string>
     <string name="action_sign_in">Sign in or register</string>
     <string name="action_sign_in_short">Sign in</string>
-    <string name="error_invalid_email">This email address is invalid</string>
-    <string name="error_invalid_password">This password is too short</string>
-    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_invalid_Username">This Username address is invalid</string>
+    <string name="error_invalid_Opponent">This Opponent is too short</string>
+    <string name="error_incorrect_Opponent">This Opponent is incorrect</string>
     <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
+    <string name="permission_rationale">"Contacts permissions are needed for providing Username
         completions."
     </string>
 
