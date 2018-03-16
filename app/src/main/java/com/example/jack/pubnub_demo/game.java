@@ -2,11 +2,13 @@ package com.example.jack.pubnub_demo;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Html;
 import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
@@ -20,7 +22,13 @@ import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 
 public class game extends AppCompatActivity {
     private PubNub pn;
@@ -81,21 +89,19 @@ public class game extends AppCompatActivity {
         @Override
         public void message(PubNub pubnub, PNMessageResult message) {
             try {
-                if (isGuesser) {
-                    if (waitingForImage) { //For when the opponent initially sends the image to be guessed.
-                        String messageConverted = message.getMessage().getAsString();
+                String messageConverted = message.getMessage().getAsString();
+                if (isGuesser && waitingForImage) { //For when the opponent initially sends the image to be guessed.
 
-                        //TODO: Then we search google for first img's url, store it
-                        String imageFromMessage = "";
+
+                        //Then we search google for first img's url, store it
+                        String imageFromMessage = getImageURL(messageConverted);
 
                         //Then download image and replace image with it's contents.
                         new DownloadImageTask(image).execute(imageFromMessage);
                         waitingForImage = false;
-                    } else { //For all subsequent communications about the image after it has been sent.
-
-                    }
-                } else {
-                    //TODO: Fill in code regarding receiving msgs from guesser.
+                } else { //For receiving plain text-based messages from opponent.
+                    TextView messageView = findViewById(R.id.messageView);
+                    messageView.setText(messageConverted);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -136,4 +142,26 @@ public class game extends AppCompatActivity {
             bmImage.setImageBitmap(result);
         }
     }
+
+    private String getImageURL(String image){
+        String imageURL = "";
+        try{
+            URL url = new URL("https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=" + image);
+            URLConnection connection = url.openConnection();
+
+            String line;
+            StringBuilder builder = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            while((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+
+            JSONObject json = new JSONObject(builder.toString());
+            imageURL = json.getJSONObject("responseData").getJSONArray("results").getJSONObject(0).getString("url");
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+        return imageURL;
+    }
+
 }
