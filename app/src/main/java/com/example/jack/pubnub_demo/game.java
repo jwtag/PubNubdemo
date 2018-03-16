@@ -10,6 +10,7 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -29,6 +30,7 @@ import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -47,30 +49,12 @@ public class game extends AppCompatActivity {
     private PubNub pn;
     private TextView mTextMessage;
     private ImageView image;
+    private View mSend;
     private boolean isGuesser; //If the this player is playing as a guesser.
     private boolean waitingForImage; //If the current message is to be interpreted as an image to be guessed
     private List<String> otherUsers;
     private PubSubPnCallback sub;
 
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.navigation_home:
-                    mTextMessage.setText(R.string.title_home);
-                    return true;
-                case R.id.navigation_dashboard:
-                    mTextMessage.setText(R.string.title_dashboard);
-                    return true;
-                case R.id.navigation_notifications:
-                    mTextMessage.setText(R.string.title_notifications);
-                    return true;
-            }
-            return false;
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,15 +72,21 @@ public class game extends AppCompatActivity {
 
         //The first person to connect to the channel is not the guesser.
         PubSubPnCallback sub = new PubSubPnCallback();
+        this.pn.addListener(sub);
         this.pn.subscribe().channels(Arrays.asList(Constants.GAME_CHANNEL)).withPresence().execute();
         isGuesser = otherUsers.size() != 1;
         waitingForImage = true;
+        if (isGuesser){
+            ((TextView) findViewById(R.id.messageView)).setText("You are the Guesser");
+        } else {
+            ((TextView) findViewById(R.id.messageView)).setText("You need to submit a word.");
+        }
 
         //Sets up UI elements.
         mTextMessage = (TextView) findViewById(R.id.message);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.start_game_button);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         image = (ImageView) findViewById(R.id.imageView2);
+        mSend = findViewById(R.id.button2);
+        mSend.setOnClickListener(sendListener);
     }
 
     public class PubSubPnCallback extends SubscribeCallback {
@@ -107,7 +97,7 @@ public class game extends AppCompatActivity {
         @Override
         public void message(PubNub pubnub, PNMessageResult message) {
             try {
-                String messageConverted = message.getMessage().getAsString();
+                String messageConverted = message.getMessage().getAsJsonObject().get("message").getAsString();
                 if (isGuesser && waitingForImage) { //For when the opponent initially sends the image to be guessed.
 
 
@@ -118,7 +108,7 @@ public class game extends AppCompatActivity {
                         new DownloadImageTask(image).execute(imageFromMessage);
                         waitingForImage = false;
                 } else { //For receiving plain text-based messages from opponent.
-                    TextView messageView = findViewById(R.id.messageView);
+                    TextView messageView = findViewById(R.id.oppMsg);
                     messageView.setText(messageConverted);
                 }
             } catch (Exception e) {
@@ -189,11 +179,17 @@ public class game extends AppCompatActivity {
         return imageURL;
     }
 
+    private View.OnClickListener sendListener = new View.OnClickListener(){
+        public void onClick(View v) {
+            publish(mTextMessage);
+        }
+    };
+
     public void publish(View view) {
-        final EditText mMessage = (EditText) game.this.findViewById(R.id.editText);
+        final String mMessage = ((TextView) game.this.findViewById(R.id.editText)).getText().toString();
         final Map<String, String> message = new TreeMap<>();
         message.put("sender", Constants.username);
-        message.put("message", mMessage.getText().toString());
+        message.put("message", mMessage);
         message.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
         game.this.pn.publish().channel(Constants.GAME_CHANNEL).message(message).async(
                 new PNCallback() {
@@ -201,7 +197,8 @@ public class game extends AppCompatActivity {
                     public void onResponse(Object result, PNStatus pnStatus) {
                         try {
                             if (!pnStatus.isError()) {
-                                mMessage.setText("");
+                                EditText text = game.this.findViewById(R.id.editText);
+                                text.setText("");
                                 Log.v("", "publish(" + result + ")");
                             } else {
                                 Log.v("", "publishErr(" + pnStatus + ")");
