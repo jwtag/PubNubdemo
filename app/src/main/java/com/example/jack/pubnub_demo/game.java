@@ -11,13 +11,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
+import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.callbacks.SubscribeCallback;
+import com.pubnub.api.models.consumer.PNPublishResult;
 import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
@@ -29,6 +33,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class game extends AppCompatActivity {
     private PubNub pn;
@@ -76,7 +84,7 @@ public class game extends AppCompatActivity {
 
         //Sets up UI elements.
         mTextMessage = (TextView) findViewById(R.id.message);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.start_game_button);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         image = (ImageView) findViewById(R.id.imageView2);
     }
@@ -163,5 +171,32 @@ public class game extends AppCompatActivity {
         }
         return imageURL;
     }
+
+    public void publish(View view) {
+        final EditText mMessage = (EditText) game.this.findViewById(R.id.editText);
+        final Map<String, String> message = new TreeMap<>();
+        message.put("sender", Constants.username);
+        message.put("message", mMessage.getText().toString());
+        message.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
+        game.this.pn.publish().channel(Constants.GAME_CHANNEL).message(message).async(
+                new PNCallback() {
+                    @Override
+                    public void onResponse(Object result, PNStatus pnStatus) {
+                        try {
+                            if (!pnStatus.isError()) {
+                                mMessage.setText("");
+                                Log.v("", "publish(" + result + ")");
+                            } else {
+                                Log.v("", "publishErr(" + pnStatus + ")");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+        );
+    }
+
+
 
 }
