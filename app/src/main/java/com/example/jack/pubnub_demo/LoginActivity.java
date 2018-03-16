@@ -75,7 +75,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         // Set up the login form.
         mUsernameView = (AutoCompleteTextView) findViewById(R.id.username);
-        mOpponentView = (EditText) findViewById(R.id.number_of_games);
+        mOpponentView = (EditText) findViewById(R.id.opponent);
         mOpponentView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {

@@ -41,8 +41,9 @@
         android:scaleType="fitCenter"
         app:layout_constraintBottom_toTopOf="@+id/editText"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/uwlogo"
+        app:srcCompat="@drawable/hrglass"
         tools:ignore="ContentDescription,MissingConstraints" />
 
     <TextView

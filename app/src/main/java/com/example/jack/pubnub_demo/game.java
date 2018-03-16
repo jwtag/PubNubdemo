@@ -23,6 +23,8 @@ import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.callbacks.SubscribeCallback;
 import com.pubnub.api.models.consumer.PNPublishResult;
 import com.pubnub.api.models.consumer.PNStatus;
+import com.pubnub.api.models.consumer.presence.PNHereNowChannelData;
+import com.pubnub.api.models.consumer.presence.PNHereNowResult;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
@@ -34,7 +36,10 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -44,6 +49,8 @@ public class game extends AppCompatActivity {
     private ImageView image;
     private boolean isGuesser; //If the this player is playing as a guesser.
     private boolean waitingForImage; //If the current message is to be interpreted as an image to be guessed
+    private List<String> otherUsers;
+    private PubSubPnCallback sub;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -77,9 +84,12 @@ public class game extends AppCompatActivity {
         this.pn = new PubNub(config);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+        otherUsers = new ArrayList<String>();
 
         //The first person to connect to the channel is not the guesser.
-        isGuesser = pn.getSubscribedChannels().size() != 1;
+        PubSubPnCallback sub = new PubSubPnCallback();
+        this.pn.subscribe().channels(Arrays.asList(Constants.GAME_CHANNEL)).withPresence().execute();
+        isGuesser = otherUsers.size() != 1;
         waitingForImage = true;
 
         //Sets up UI elements.
@@ -117,7 +127,14 @@ public class game extends AppCompatActivity {
         }
         @Override
         public void presence(PubNub pubnub, PNPresenceEventResult presence) {
-            // no presence handling for simplicity
+            try {
+                Log.v("", "presenceP(" + presence.toString() + ")");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            String sender = presence.getUuid();
+            String presenceString = presence.getEvent().toString();
+            otherUsers.add(sender);
         }
     }
 
