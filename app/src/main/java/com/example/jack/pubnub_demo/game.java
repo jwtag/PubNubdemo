@@ -1,51 +1,35 @@
 package com.example.jack.pubnub_demo;
 
-import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Html;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.customsearch.Customsearch;
 import com.google.api.services.customsearch.CustomsearchRequestInitializer;
-import com.google.api.services.customsearch.model.Result;
 import com.google.api.services.customsearch.model.Search;
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
+import com.pubnub.api.PubNubException;
 import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.callbacks.SubscribeCallback;
-import com.pubnub.api.models.consumer.PNPublishResult;
 import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.presence.PNHereNowChannelData;
+import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData;
 import com.pubnub.api.models.consumer.presence.PNHereNowResult;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
-import org.json.JSONObject;
-import org.w3c.dom.Text;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -58,16 +42,19 @@ import java.util.TreeMap;
 public class game extends AppCompatActivity {
     private PubNub pn;
     private TextView mTextMessage;
+    private TextView mTurn;
     private ImageView image;
     private View mSend;
     private boolean isGuesser; //If the this player is playing as a guesser.
     private boolean waitingForImage; //If the current message is to be interpreted as an image to be guessed
-    private List<String> otherUsers;
     private PubSubPnCallback sub;
+    private long timeJoined;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        this.mTurn = findViewById(R.id.messageView);
 
         //Configures the PubNub
         PNConfiguration config = new PNConfiguration();
@@ -78,25 +65,36 @@ public class game extends AppCompatActivity {
         this.pn = new PubNub(config);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
-        otherUsers = new ArrayList<String>();
 
         //The first person to connect to the channel is not the guesser.
+        isGuesser = true;
+        this.timeJoined = System.currentTimeMillis();
         PubSubPnCallback sub = new PubSubPnCallback();
-        this.pn.addListener(sub);
-        this.pn.subscribe().channels(Arrays.asList(Constants.GAME_CHANNEL)).withPresence().execute();
-        isGuesser = otherUsers.size() != 1;
+        pn.addListener(sub);
+        this.pn.subscribe().channels(Arrays.asList(Constants.GAME_CHANNEL)).execute();
+        this.publish("ISANYONEHERE"+ timeJoined);
         waitingForImage = true;
-        if (isGuesser){
-            ((TextView) findViewById(R.id.messageView)).setText("You are the Guesser");
-        } else {
-            ((TextView) findViewById(R.id.messageView)).setText("You need to submit a word.");
-        }
+
 
         //Sets up UI elements.
-        mTextMessage = (TextView) findViewById(R.id.message);
-        image = (ImageView) findViewById(R.id.imageView2);
+        mTextMessage = findViewById(R.id.message);
+        image = findViewById(R.id.imageView2);
         mSend = findViewById(R.id.button2);
         mSend.setOnClickListener(sendListener);
+
+        goTime();
+    }
+
+    /**
+     * Makes the program start the game.
+     */
+    public void goTime(){
+        mTurn = findViewById(R.id.messageView);
+        if (isGuesser){
+            mTurn.setText("You are the Guesser");
+        } else {
+            mTurn.setText("You need to submit a word.");
+        }
     }
 
     /**
@@ -114,19 +112,27 @@ public class game extends AppCompatActivity {
         @Override
         public void message(PubNub pubnub, PNMessageResult message) {
             try {
-
                 String messageConverted = message.getMessage().getAsJsonObject().get("message").getAsString();
-                if (isGuesser && waitingForImage) { //For when the opponent initially sends the image to be guessed.
+                if (messageConverted.contains("ISANYONEHERE")){
+                    Log.v("TJ", "" + timeJoined);
 
+                    long otherTimeJoined  = Long.parseLong(messageConverted.substring(12));
+                    Log.v("OTJ", "" + otherTimeJoined);
+
+                    isGuesser = otherTimeJoined == timeJoined;
+                    goTime();
+                } else {
+                    if (messageConverted.contains("I_M_A_G_E") && waitingForImage) { //For when the opponent initially sends the image to be guessed.
                         //Then we search google for first img's url, store it
-                        String imageFromMessage = getImage(messageConverted);
+                        String imageFromMessage = getImage(messageConverted.substring(8));
                         Log.v("URL", imageFromMessage);
                         //Then download image and replace image with it's contents.
                         new DownloadImageTask(image).execute(imageFromMessage);
                         waitingForImage = false;
-                } else { //For receiving plain text-based messages from opponent.
-                    TextView messageView = findViewById(R.id.oppMsg);
-                    messageView.setText(messageConverted);
+                    } else { //For receiving plain text-based messages from opponent.
+                        TextView messageView = findViewById(R.id.oppMsg);
+                        messageView.setText(messageConverted);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -139,9 +145,6 @@ public class game extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            String sender = presence.getUuid();
-            String presenceString = presence.getEvent().toString();
-            otherUsers.add(sender);
         }
     }
 
@@ -209,9 +212,12 @@ public class game extends AppCompatActivity {
         return "";
     }
 
+    /**
+     * Listener for if the "SEND" button is clicked.
+     */
     private View.OnClickListener sendListener = new View.OnClickListener(){
         public void onClick(View v) {
-            publish(mTextMessage);
+            publish(((TextView) game.this.findViewById(R.id.editText)).getText().toString());
         }
     };
 
@@ -221,32 +227,36 @@ public class game extends AppCompatActivity {
      * Based off of (but not directly copied from) the PubNub Android tutorial.
      * https://www.pubnub.com/tutorials/android/chat-basics/
      *
-     * @param view The TextView from which the message is being pulled.
+     * @param mMessage The message being published
      */
-    public void publish(View view) {
-        final String mMessage = ((TextView) game.this.findViewById(R.id.editText)).getText().toString();
+    public void publish(String mMessage) {
         final Map<String, String> message = new TreeMap<>();
-        message.put("sender", Constants.username);
-        message.put("message", mMessage);
-        message.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
-        game.this.pn.publish().channel(Constants.GAME_CHANNEL).message(message).async(
-                new PNCallback() {
-                    @Override
-                    public void onResponse(Object result, PNStatus pnStatus) {
-                        try {
-                            if (!pnStatus.isError()) {
-                                EditText text = game.this.findViewById(R.id.editText);
-                                text.setText("");
-                                Log.v("", "publish(" + result + ")");
-                            } else {
-                                Log.v("", "publishErr(" + pnStatus + ")");
+        if (!isGuesser && waitingForImage){
+            mMessage = "I_M_A_G_E" + mMessage;
+        }
+        if (!isGuesser || !waitingForImage) {
+            message.put("sender", Constants.username);
+            message.put("message", mMessage);
+            message.put("timestamp", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
+            game.this.pn.publish().channel(Constants.GAME_CHANNEL).message(message).async(
+                    new PNCallback() {
+                        @Override
+                        public void onResponse(Object result, PNStatus pnStatus) {
+                            try {
+                                if (!pnStatus.isError()) {
+                                    EditText text = game.this.findViewById(R.id.editText);
+                                    text.setText("");
+                                    Log.v("", "publish(" + result + ")");
+                                } else {
+                                    Log.v("", "publishErr(" + pnStatus + ")");
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
-                }
-        );
+            );
+        }
     }
 
 
