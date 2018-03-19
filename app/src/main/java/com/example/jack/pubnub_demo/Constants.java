@@ -9,7 +9,7 @@ public class Constants {
     public static final String SUBSCRIBE = "sub-c-ca9c27b0-28a9-11e8-86ee-1e8059ef76e6";
     public static final String GAME_CHANNEL = "game";
 
-    public static final String GOOGLE_CSE_KEY = "AIzaSyDahnWEQ_WkaoN9U56zzadhHd-fQ9tpTes";
+    public static final String GOOGLE_CSE_KEY = "AIzaSyCebbtmrWvEZ886HUYSvmqyv4Nw7Cfl9sM";
 
     public static String username = "";
     public static String opponent = "";

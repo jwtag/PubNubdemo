@@ -1,15 +1,12 @@
 package com.example.jack.pubnub_demo;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -22,13 +19,9 @@ import com.google.api.services.customsearch.CustomsearchRequestInitializer;
 import com.google.api.services.customsearch.model.Search;
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
-import com.pubnub.api.PubNubException;
 import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.callbacks.SubscribeCallback;
 import com.pubnub.api.models.consumer.PNStatus;
-import com.pubnub.api.models.consumer.presence.PNHereNowChannelData;
-import com.pubnub.api.models.consumer.presence.PNHereNowOccupantData;
-import com.pubnub.api.models.consumer.presence.PNHereNowResult;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
@@ -36,16 +29,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 public class game extends AppCompatActivity {
     private PubNub pn;
-    private TextView mTextMessage;
     private TextView mTurn;
     private ImageView image;
     private Button yes;
@@ -83,7 +73,6 @@ public class game extends AppCompatActivity {
 
 
         //Sets up UI elements.
-        mTextMessage = findViewById(R.id.message);
         image = findViewById(R.id.imageView2);
         mSend = findViewById(R.id.button2);
         mSend.setOnClickListener(sendListener);
@@ -128,7 +117,7 @@ public class game extends AppCompatActivity {
                     waitingForImage = !waitingForImage;
                     goTime();
                     image.setImageResource(R.drawable.hrglass);
-                    image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
                     TextView messageView = findViewById(R.id.oppMsg);
                     messageView.setText(messageConverted);
                     mTurn = findViewById(R.id.messageView);
@@ -198,7 +187,7 @@ public class game extends AppCompatActivity {
 
         protected void onPostExecute(Bitmap result) {
             bmImage.setImageBitmap(result);
-            bmImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            bmImage.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         }
     }
 
@@ -220,12 +209,12 @@ public class game extends AppCompatActivity {
                 .build();
 
         //Set search parameter
-        Customsearch.Cse.List list = cs.cse().list(image).setCx("003540613111458598946:owqp-3vrfz0");
+        Customsearch.Cse.List list = cs.cse().list(image).setCx("016348624239509613727:qfywoa3331u");
 
         //Execute search
         Search result = list.setSearchType("image").execute();
         if (result.getItems()!=null) {
-            Log.d("ASDFASDF", result.getItems().get(0).getLink());
+            Log.d("LINK", result.getItems().get(0).getLink());
             return result.getItems().get(0).getLink();
         }
         return "";
