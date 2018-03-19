@@ -126,11 +126,12 @@ public class game extends AppCompatActivity {
                 if (messageConverted.equals("Yes! Your turn.")){
                     isGuesser = !isGuesser;
                     waitingForImage = !waitingForImage;
+                    goTime();
                     image.setImageResource(R.drawable.hrglass);
                     image.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     TextView messageView = findViewById(R.id.oppMsg);
                     messageView.setText(messageConverted);
-                    goTime();
+                    mTurn = findViewById(R.id.messageView);
                 } else if (messageConverted.contains("ISANYONEHERE")){
                     Log.v("TJ", "" + timeJoined);
 
@@ -166,8 +167,6 @@ public class game extends AppCompatActivity {
             }
         }
     }
-
-    //REVISE THIS
 
     /**
      * Replaces the image in the ImageView with the image to be guessed after
