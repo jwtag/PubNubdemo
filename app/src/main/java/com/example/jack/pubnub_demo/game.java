@@ -1,5 +1,6 @@
 package com.example.jack.pubnub_demo;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.Image;
@@ -18,6 +19,13 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.customsearch.Customsearch;
+import com.google.api.services.customsearch.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.model.Result;
+import com.google.api.services.customsearch.model.Search;
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
 import com.pubnub.api.callbacks.PNCallback;
@@ -33,10 +41,12 @@ import org.json.JSONObject;
 import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,13 +107,13 @@ public class game extends AppCompatActivity {
         @Override
         public void message(PubNub pubnub, PNMessageResult message) {
             try {
+
                 String messageConverted = message.getMessage().getAsJsonObject().get("message").getAsString();
                 if (isGuesser && waitingForImage) { //For when the opponent initially sends the image to be guessed.
 
-
                         //Then we search google for first img's url, store it
-                        String imageFromMessage = getImageURL(messageConverted);
-
+                        String imageFromMessage = getImage(messageConverted);
+                        Log.v("URL", imageFromMessage);
                         //Then download image and replace image with it's contents.
                         new DownloadImageTask(image).execute(imageFromMessage);
                         waitingForImage = false;
@@ -158,25 +168,25 @@ public class game extends AppCompatActivity {
         }
     }
 
-    private String getImageURL(String image){
-        String imageURL = "";
-        try{
-            URL url = new URL("https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=" + image);
-            URLConnection connection = url.openConnection();
+    public String getImage(String image) throws IOException, GeneralSecurityException {
+        //Instance Customsearch
+        Customsearch cs = new Customsearch.Builder(AndroidHttp.newCompatibleTransport(),
+                JacksonFactory.getDefaultInstance(),
+                null)
+                .setApplicationName("google images for pubnub")
+                .setGoogleClientRequestInitializer(new CustomsearchRequestInitializer(Constants.GOOGLE_CSE_KEY))
+                .build();
 
-            String line;
-            StringBuilder builder = new StringBuilder();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            while((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
+        //Set search parameter
+        Customsearch.Cse.List list = cs.cse().list(image).setCx("003540613111458598946:owqp-3vrfz0");
 
-            JSONObject json = new JSONObject(builder.toString());
-            imageURL = json.getJSONObject("responseData").getJSONArray("results").getJSONObject(0).getString("url");
-        } catch(Exception e){
-            e.printStackTrace();
+        //Execute search
+        Search result = list.setSearchType("image").execute();
+        if (result.getItems()!=null) {
+            Log.d("ASDFASDF", result.getItems().get(0).getLink());
+            return result.getItems().get(0).getLink();
         }
-        return imageURL;
+        return "";
     }
 
     private View.OnClickListener sendListener = new View.OnClickListener(){

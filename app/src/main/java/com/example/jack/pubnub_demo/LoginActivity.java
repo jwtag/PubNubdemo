@@ -45,7 +45,6 @@ import static android.Manifest.permission.READ_CONTACTS;
  */
 public class LoginActivity extends AppCompatActivity {
 
-    private Intent nextActivity = new Intent(this, game.class);
     /**
      * Id to identity READ_CONTACTS permission request.
      */
@@ -122,7 +121,7 @@ public class LoginActivity extends AppCompatActivity {
         View focusView = null;
 
         // Check for a valid Opponent, if the user entered one.
-        if (!TextUtils.isEmpty(Opponent)) {
+        if (TextUtils.isEmpty(Opponent)) {
             mOpponentView.setError(getString(R.string.error_invalid_Opponent));
             focusView = mOpponentView;
             cancel = true;
@@ -131,10 +130,6 @@ public class LoginActivity extends AppCompatActivity {
         // Check for a valid Username address.
         if (TextUtils.isEmpty(Username)) {
             mUsernameView.setError(getString(R.string.error_field_required));
-            focusView = mUsernameView;
-            cancel = true;
-        } else {
-            mUsernameView.setError(getString(R.string.error_invalid_Username));
             focusView = mUsernameView;
             cancel = true;
         }
@@ -146,8 +141,7 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
-            mAuthTask = new UserLoginTask(Username, Opponent);
-            mAuthTask.execute((Void) null);
+            startActivity(new Intent(this, game.class));
         }
     }
 
@@ -194,7 +188,6 @@ public class LoginActivity extends AppCompatActivity {
             if (success) {
                 Constants.username = mUsername;
                 Constants.opponent = mOpponent;
-                startActivity(nextActivity);
             } else {
                 mOpponentView.setError(getString(R.string.error_incorrect_Opponent));
                 mOpponentView.requestFocus();
