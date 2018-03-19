@@ -99,6 +99,13 @@ public class game extends AppCompatActivity {
         mSend.setOnClickListener(sendListener);
     }
 
+    /**
+     * Callback method for the PubNub.  Used to get the messages from the PubNub, update the
+     * ImageView.
+     *
+     * Based off of (but not directly copied from) the PubNub Android tutorial.
+     * https://www.pubnub.com/tutorials/android/chat-basics/
+     */
     public class PubSubPnCallback extends SubscribeCallback {
         @Override
         public void status(PubNub pubnub, PNStatus status) {
@@ -141,7 +148,12 @@ public class game extends AppCompatActivity {
     //REVISE THIS
 
     /**
-     * Replaces the image with the image to be guessed.
+     * Replaces the image in the ImageView with the image to be guessed after
+     * downloading it from GoogleImages.
+     *
+     * Code is a modified version of code derived from the following:
+     *
+     * https://stackoverflow.com/questions/2471935/how-to-load-an-imageview-by-url-in-android
      */
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         ImageView bmImage;
@@ -168,6 +180,14 @@ public class game extends AppCompatActivity {
         }
     }
 
+
+    /**
+     * Searches Google Images for the first image related to the passed query.
+     * @param image The term being searched for.
+     * @return A URL (as a String) of the first image in Google images related to the image passed.
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
     public String getImage(String image) throws IOException, GeneralSecurityException {
         //Instance Customsearch
         Customsearch cs = new Customsearch.Builder(AndroidHttp.newCompatibleTransport(),
@@ -195,6 +215,14 @@ public class game extends AppCompatActivity {
         }
     };
 
+    /**
+     * Pushes the latest message to PubNub.
+     *
+     * Based off of (but not directly copied from) the PubNub Android tutorial.
+     * https://www.pubnub.com/tutorials/android/chat-basics/
+     *
+     * @param view The TextView from which the message is being pulled.
+     */
     public void publish(View view) {
         final String mMessage = ((TextView) game.this.findViewById(R.id.editText)).getText().toString();
         final Map<String, String> message = new TreeMap<>();
