@@ -1,12 +1,16 @@
 package com.example.jack.pubnub_demo;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -44,6 +48,8 @@ public class game extends AppCompatActivity {
     private TextView mTextMessage;
     private TextView mTurn;
     private ImageView image;
+    private Button yes;
+    private Button no;
     private View mSend;
     private boolean isGuesser; //If the this player is playing as a guesser.
     private boolean waitingForImage; //If the current message is to be interpreted as an image to be guessed
@@ -81,6 +87,10 @@ public class game extends AppCompatActivity {
         image = findViewById(R.id.imageView2);
         mSend = findViewById(R.id.button2);
         mSend.setOnClickListener(sendListener);
+        yes = findViewById(R.id.yesButton);
+        no = findViewById(R.id.noButton);
+        yes.setOnClickListener(yesListener);
+        no.setOnClickListener(noListener);
 
         goTime();
     }
@@ -113,7 +123,15 @@ public class game extends AppCompatActivity {
         public void message(PubNub pubnub, PNMessageResult message) {
             try {
                 String messageConverted = message.getMessage().getAsJsonObject().get("message").getAsString();
-                if (messageConverted.contains("ISANYONEHERE")){
+                if (messageConverted.equals("Yes! Your turn.")){
+                    isGuesser = !isGuesser;
+                    waitingForImage = !waitingForImage;
+                    image.setImageResource(R.drawable.hrglass);
+                    image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    TextView messageView = findViewById(R.id.oppMsg);
+                    messageView.setText(messageConverted);
+                    goTime();
+                } else if (messageConverted.contains("ISANYONEHERE")){
                     Log.v("TJ", "" + timeJoined);
 
                     long otherTimeJoined  = Long.parseLong(messageConverted.substring(12));
@@ -124,7 +142,7 @@ public class game extends AppCompatActivity {
                 } else {
                     if (messageConverted.contains("I_M_A_G_E") && waitingForImage) { //For when the opponent initially sends the image to be guessed.
                         //Then we search google for first img's url, store it
-                        String imageFromMessage = getImage(messageConverted.substring(8));
+                        String imageFromMessage = getImage(messageConverted.substring(9));
                         Log.v("URL", imageFromMessage);
                         //Then download image and replace image with it's contents.
                         new DownloadImageTask(image).execute(imageFromMessage);
@@ -134,6 +152,7 @@ public class game extends AppCompatActivity {
                         messageView.setText(messageConverted);
                     }
                 }
+                goTime();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -180,6 +199,7 @@ public class game extends AppCompatActivity {
 
         protected void onPostExecute(Bitmap result) {
             bmImage.setImageBitmap(result);
+            bmImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
         }
     }
 
@@ -222,6 +242,28 @@ public class game extends AppCompatActivity {
     };
 
     /**
+     * Listener for if the "YES" button is clicked.
+     */
+    private View.OnClickListener yesListener = new View.OnClickListener(){
+        public void onClick(View v) {
+            publish("Yes! Your turn.");
+            game.this.findViewById(R.id.editText).setVisibility(View.VISIBLE);
+            yes.setVisibility(View.GONE);
+            no.setVisibility(View.GONE);
+            goTime();
+        }
+    };
+
+    /**
+     * Listener for if the "NO" button is clicked.
+     */
+    private View.OnClickListener noListener = new View.OnClickListener(){
+        public void onClick(View v) {
+            publish("No.  Guess again.");
+        }
+    };
+
+    /**
      * Pushes the latest message to PubNub.
      *
      * Based off of (but not directly copied from) the PubNub Android tutorial.
@@ -233,6 +275,9 @@ public class game extends AppCompatActivity {
         final Map<String, String> message = new TreeMap<>();
         if (!isGuesser && waitingForImage){
             mMessage = "I_M_A_G_E" + mMessage;
+            this.findViewById(R.id.editText).setVisibility(View.GONE);
+            yes.setVisibility(View.VISIBLE);
+            no.setVisibility(View.VISIBLE);
         }
         if (!isGuesser || !waitingForImage) {
             message.put("sender", Constants.username);
